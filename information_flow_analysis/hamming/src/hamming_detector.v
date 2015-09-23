@@ -1,22 +1,41 @@
-module hamming_generator #(
-	parameter INPUT_BITS = 4
+/*
+	Author		: Hyoukjun Kwon
+	Date		: 09-21-2015
+	Module name : hamming_detector
+	Description : It detects the error of the (7,4) hamming code.
+*/
+
+/*
+	Information flow policy
+
+
+
+*/
+
+
+
+
+//TODO: Parameterized this module for general Hamming code generation.
+
+module hamming_detector #(
+	parameter HAMMING_BITS = 4
 )
 (
-	input	wire	[INPUT_BITS-1	:	0]	DATA_IN,
-	
-	output	wire	[OUTPUT_BITS-1	:	0]	DATA_OUT
+	/* Inputs */
+	input	wire	[HAMMING_BITS-1	:	0]	DATA_IN,
+
+	/* Outputs */
+	output	wire							EXIST_ERROR
 );
 
-localparam OUTPUT_BITS = OUTPUT_BITS + (OUTPUT_BITS -1);
+localparam	PARITY_BITS = HAMMING_BITS -1;
 
-/* Original messages */
-assign DATA_OUT[0] = DATA_IN[0];
-assign DATA_OUT[1] = DATA_IN[1];
-assign DATA_OUT[2] = DATA_IN[2];
-assign DATA_OUT[4] = DATA_IN[3];
+wire	[PARITY_BITS-1	:	0]	CHECK_VALUES;
 
-assign DATA_OUT[3] = DATA_IN[4] ^ DATA_IN[2] ^ DATA_IN[0];
-assign DATA_OUT[5] = DATA_IN[4] ^ DATA_IN[1] ^ DATA_IN[0];
-assign DATA_OUT[6] = DATA_IN[2] ^ DATA_IN[1] ^ DATA_IN[0];
+assign CHECK_VALUES[0] = DATA_IN[6] ^ DATA_IN[4] ^ DATA_IN[2] ^ DATA_IN[0];
+assign CHECK_VALUES[1] = DATA_IN[5] ^ DATA_IN[4] ^ DATA_IN[1] ^ DATA_IN[0];
+assign CEHCK_VALUES[2] = DATA_IN[3] ^ DATA_IN[2] ^ DATA_IN[1] ^ DATA_IN[0];
+
+assign EXIST_ERROR = CHECK_VALUES[0] ^ CHECK_VALUES[1] ^ CHECK_VALUES[2]; 
 
 endmodule
