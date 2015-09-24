@@ -1,0 +1,80 @@
+\subsection{SHA1}
+
+\begin{table}[]
+	\centering
+	\caption{The list of variables and channels}
+	\label{my-label}
+	\begin{tabular}{lllll}
+		SHA1\_H0 &  &  &  &  \\
+		B &  &  &  &  \\
+		C &  &  &  &  \\
+		D &  &  &  &  \\
+		  &  &  &  & 
+	\end{tabular}
+\end{table}
+
+Booth multiplication algorithm is known as one of the fastest multiplication algorithm in H/W.
+
+\begin{Verbatim}[frame=single, numbers=left, tabsize=4, label=Command input/output]
+
+\end{Verbatim}
+\begin{Verbatim}[frame=single, numbers=left, tabsize=2, label=Combinational logic]
+assign MUL_OUT        = PRODUCT[OUTPUT_BITS	:	1];          | PRODUCT => MUL_OUT
+assign LAST_TWO_BITS  =	PRODUCT[1:0];                      | PRODUCT => LAST_TWO_BITS
+
+assign UPPER_PRODUCT	=	PRODUCT[OUTPUT_BITS -: INPUT_BITS];| PRODUCT => UPPER_PRODUCT
+assign LOWER_PRODUCT  =	PRODUCT[0 +: INPUT_BITS+1];        | PRODUCT => LOWER_PRODUCT
+\end{Verbatim}
+
+\begin{Verbatim}[frame=single, numbers=left, tabsize=4, label=Control logic]
+always @ (posedge CLK)
+begin: CONTROL_LOGICS
+	if(RST) begin
+		STATE					<=	IDLE;
+		PRODUCT				<=	0;
+		MUL_OUT_VALID	<=	0;
+		STAGE					<=	0;
+	end
+	else if(STATE == IDLE) begin
+		if(MUL_1_VALID && MUL_2_VALID) begin
+			STATE							<=	BUSY;
+			STAGE							<=	0;
+			MULTIPLICAND			<=	MUL_1;
+			MULTIPLIER				<=	MUL_2;
+			NEG_MULTIPLICAND	<=	~MUL_1 + 1;
+			NEG_MULTIPLIER		<=	~MUL_2 + 1;
+		end
+	end
+	else begin //if(!RST && STATE == BUSY)
+		if(STAGE == INPUT_BITS-1) begin
+			STATE					<=	IDLE;
+			STAGE					<=	STAGE+1;	
+			MUL_OUT_VALID <=	1;
+		end
+	end
+end
+\end{Verbatim}
+
+
+
+\begin{Verbatim}[frame=single, numbers=left, tabsize=4, label=Product calculation]
+always @ (posedge CLK)
+begin: PRODUCT_CALCULATION
+	if(STATE == BUSY) begin
+		case(LAST_TWO_BITS)
+			'b01: begin //Add multiplicand
+				PRODUCT <= ({(UPPER_PRODUCT + MULTIPLICAND), LOWER_PRODUCT} >>> 1); 
+			end
+			'b10: begin	//Subtract multiplicand
+				PRODUCT <= ({(UPPER_PRODUCT + NEG_MULTIPLICAND), LOWER_PRODUCT} >>> 1); 
+			end
+			default: begin
+				PRODUCT	<= (PRODUCT >>> 1);
+			end
+		endcase
+	end
+end
+
+
+
+\end{Verbatim}

@@ -36,6 +36,7 @@
 ////                                                             ////
 /////////////////////////////////////////////////////////////////////
 
+
 `define SHA1_H0 32'h67452301
 `define SHA1_H1 32'hefcdab89
 `define SHA1_H2 32'h98badcfe
@@ -47,18 +48,17 @@
 `define SHA1_K2 32'h8f1bbcdc
 `define SHA1_K3 32'hca62c1d6
 
-module sha1 (clk_i, rst_i, text_i, text_o, cmd_i, cmd_w_i, cmd_o);
-
-	input		clk_i; 	// global clock input
-	input		rst_i; 	// global reset input , active high
+module sha1 (
+	input	wire			clk_i,		//Global clock input
+	input	wire			rst_i,		//Global reset input
+	input	wire	[31:0]	text_i,		//Text input 32bit
 	
-	input	[31:0]	text_i;	// text input 32bit
-	output	[31:0]	text_o;	// text output 32bit
-	
-	input	[2:0]	cmd_i;	// command input
-	input		cmd_w_i;// command input write enable
-	output	[3:0]	cmd_o;	// command output(status)
+	input	wire	[2:0]	cmd_i,		//Command input
+	input	wire			cmd_w_en,	//Command input write enable
 
+	output	reg		[31:0]	text_o,		//Text output 32bit
+	output	wire	[3:0]	cmd_o		//Command output(status)
+);
 	/*
 		cmd
 		Busy Round W R
@@ -83,42 +83,40 @@ module sha1 (clk_i, rst_i, text_i, text_o, cmd_i, cmd_w_i, cmd_o);
 		1	read data
 			
 	*/
-	
 
-    	reg	[3:0]	cmd;
-    	wire	[3:0]	cmd_o;
-    	
-    	reg	[31:0]	text_o;
-    	
-    	reg	[6:0]	round;
-    	wire	[6:0]	round_plus_1;
-    	
-    	reg	[2:0]	read_counter;
-    	
-    	reg	[31:0]	H0,H1,H2,H3,H4;
-    	reg	[31:0]	W0,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10,W11,W12,W13,W14;
-    	reg	[31:0]	Wt,Kt;
-    	reg	[31:0]	A,B,C,D,E;
+	reg		[3:0]	cmd;
 
-    	reg		busy;
+	reg		[6:0]	round;
+	wire	[6:0]	round_plus_1;
+
+	reg		[2:0]	read_counter;
+
+	reg		[31:0]	H0,H1,H2,H3,H4;
+	reg		[31:0]	W0,W1,W2,W3,W4,W5,W6,W7,W8,W9,W10,W11,W12,W13,W14;
+	reg		[31:0]	Wt,Kt;
+	reg		[31:0]	A,B,C,D,E;
+
+	reg		busy;
+
+	assign cmd_o = cmd;				
+
+	always @ (posedge clk_i)
+   	begin
+		if (rst_i) begin
+   			cmd <= 'b0;	
+		end
+   		else if (cmd_w_en) begin	
+    		cmd[2:0] <= cmd_i[2:0];
+		end
+    	else begin
+    		cmd[3] <= busy;	 
+    		if (~busy) begin
+    			cmd[1:0] <= 2'b00;		// hardware auto clean R/W bits
+			end
+		end
+	end
     	
-    	assign cmd_o = cmd;
-    	always @ (posedge clk_i)
-    	begin
-    		if (rst_i)
-    			cmd <= 'b0;
-    		else
-    		if (cmd_w_i)
-    			cmd[2:0] <= cmd_i[2:0];		// busy bit can't write
-    		else
-    		begin
-    			cmd[3] <= busy;			// update busy bit
-    			if (~busy)
-    				cmd[1:0] <= 2'b00;	// hardware auto clean R/W bits
-    		end
-    	end
-    	
-    	// Hash functions
+	// Hash functions
 	wire [31:0] SHA1_f1_BCD,SHA1_f2_BCD,SHA1_f3_BCD,SHA1_Wt_1;
 	wire [31:0] SHA1_ft_BCD;
 	wire [31:0] next_Wt,next_A,next_C;
@@ -191,7 +189,7 @@ module sha1 (clk_i, rst_i, text_i, text_o, cmd_i, cmd_w_i, cmd_o);
 						W0 <= text_i;
 						Wt <= text_i;
 						busy <= 'b1;
-						round <= round_plus_1;
+						round <= round_plus_1; 
                                                	
 						case (cmd[2])
 							1'b0:	// sha-1 first message
